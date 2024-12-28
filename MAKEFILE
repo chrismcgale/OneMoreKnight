@@ -1,8 +1,8 @@
 # Makefile
 CC = gcc
 CFLAGS = -Wall -Wextra -O2
-LIBS = -lraylib -lm
--DCMAKE_TOOLCHAIN_FILE=C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake
+LIBS = -lraylib -lwinmm -lgdi32 -lopengl32 -lm
+DCMAKE_TOOLCHAIN_FILE=-I"C:/dev/vcpkg/installed/x64-windows/include" -L"C:/dev/vcpkg/installed/x64-windows/lib"
 
 # Detect operating system
 ifeq ($(OS),Windows_NT)
@@ -14,7 +14,8 @@ else
 endif
 
 # Source files
-SOURCES = main.c game.c
+SOURCES = main.c game.c player.c vampire.c
+HEADERS = game.h player.h vampire.h weapon.h talisman.h
 OBJECTS = $(SOURCES:.c=.o)
 
 # Main target
@@ -22,11 +23,11 @@ all: $(EXECUTABLE)
 
 # Linking
 $(EXECUTABLE): $(OBJECTS)
-	$(CC) $(OBJECTS) -o $(EXECUTABLE) $(LIBS)
+	$(CC) $(OBJECTS) -o $(EXECUTABLE) $(DCMAKE_TOOLCHAIN_FILE) $(LIBS)
 
-# Compilation
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+# Compilation pattern rule
+%.o: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@ $(DCMAKE_TOOLCHAIN_FILE)
 
 # Clean build files
 clean:
@@ -35,4 +36,21 @@ clean:
 # Rebuild everything
 rebuild: clean all
 
-.PHONY: all clean rebuild
+# Run the game
+run: $(EXECUTABLE)
+	./$(EXECUTABLE)
+
+# Development target - build and run
+dev: rebuild run
+
+# Help target
+help:
+	@echo "Available targets:"
+	@echo "  all      - Build the game (default)"
+	@echo "  clean    - Remove build files"
+	@echo "  rebuild  - Clean and rebuild"
+	@echo "  run      - Run the compiled game"
+	@echo "  dev      - Rebuild and run"
+	@echo "  help     - Show this help message"
+
+.PHONY: all clean rebuild run dev help

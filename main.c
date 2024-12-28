@@ -1,5 +1,6 @@
 // main.c
 #include "game.h"
+#include <time.h>
 
 int main(void) {
     // Initialize window
@@ -9,17 +10,18 @@ int main(void) {
     // Initialize random seed
     srand(time(NULL));
 
-    // Initialize game state
-    GameState game;
-    InitGame(&game);
+    // Create game state
+    GameState* game = Game_Create();
 
     // Main game loop
     while (!WindowShouldClose()) {
-        UpdateGame(&game);
-        DrawGame(&game);
+        Game_Update(game);
+        Game_Draw(game);
     }
 
     // Cleanup
+    Game_Destroy(game);
     CloseWindow();
+    
     return 0;
 }
