@@ -1,0 +1,38 @@
+# Makefile
+CC = gcc
+CFLAGS = -Wall -Wextra -O2
+LIBS = -lraylib -lm
+-DCMAKE_TOOLCHAIN_FILE=C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+# Detect operating system
+ifeq ($(OS),Windows_NT)
+    EXECUTABLE = vampire_survivor.exe
+    RM = del /Q
+else
+    EXECUTABLE = vampire_survivor
+    RM = rm -f
+endif
+
+# Source files
+SOURCES = main.c game.c
+OBJECTS = $(SOURCES:.c=.o)
+
+# Main target
+all: $(EXECUTABLE)
+
+# Linking
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(OBJECTS) -o $(EXECUTABLE) $(LIBS)
+
+# Compilation
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Clean build files
+clean:
+	$(RM) $(OBJECTS) $(EXECUTABLE)
+
+# Rebuild everything
+rebuild: clean all
+
+.PHONY: all clean rebuild
