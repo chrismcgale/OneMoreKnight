@@ -2,7 +2,11 @@
 #include <raylib.h>
 #include <raymath.h>
 #include "game.h"
+#include "weapon.h"
 #include <math.h>
+#include <stdio.h>
+
+
 
 GameState* Game_Create(void) {
     GameState* game = (GameState*)malloc(sizeof(GameState));
@@ -17,6 +21,7 @@ GameState* Game_Create(void) {
     game->currentNight = 1;
     game->vampireCount = 0;
     game->gameOver = false;
+    game->BulletCount = 0;
 
     // Initialize arrays
     for (int i = 0; i < MAX_VAMPIRES; i++) {
@@ -85,24 +90,7 @@ void Game_SpawnVampire(GameState* game) {
     }
 }
 
-void Game_ShootBullet(GameState* game) {
-    if (!Player_CanShoot(game->player)) return;
 
-    // Find inactive bullet slot
-    for (int i = 0; i < MAX_BULLETS; i++) {
-        if (!game->bullets[i].active) {
-            game->bullets[i].position = Player_GetPosition(game->player);
-            Vector2 mousePos = GetMousePosition();
-            Vector2 direction = Vector2Subtract(mousePos, game->bullets[i].position);
-            game->bullets[i].direction = Vector2Normalize(direction);
-            game->bullets[i].radius = 5.0f;
-            game->bullets[i].active = true;
-            game->bullets[i].damage = 1.0f;
-            Player_UpdateShootCooldown(game->player);
-            break;
-        }
-    }
-}
 
 void Game_SpawnLoot(GameState* game, Vector2 position) {
     if (GetRandomValue(0, 100) / 100.0f > LOOT_CHANCE) return;
@@ -139,7 +127,8 @@ void Game_HandleLootCollection(GameState* game) {
                         Player_AddLife(game->player);
                         break;
                     case LOOT_WEAPON:
-                        Player_AddWeapon(game->player, game->loot[i].data.weapon);
+                        game->BulletCount = 0;
+                        Player_AddWeapon(game->player, Weapon_Create(game->loot[i].data.weapon));
                         break;
                     case LOOT_TALISMAN:
                         Player_AddTalisman(game->player, game->loot[i].data.talisman);
@@ -165,15 +154,18 @@ void Game_Update(GameState* game) {
     Player_Update(game->player);
 
     // Handle shooting
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        Game_ShootBullet(game);
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        handleWeaponInput(Player_GetPosition(game->player), GetMousePosition(), game->bullets, &game->BulletCount, game->player->currentWeapon);
+         printf("BulletCount %d \n", game->BulletCount);
+        Player_UpdateShootCooldown(game->player);
     }
 
     // Update bullets
     for (int i = 0; i < MAX_BULLETS; i++) {
         if (game->bullets[i].active) {
-            game->bullets[i].position.x += game->bullets[i].direction.x * 7.0f;
-            game->bullets[i].position.y += game->bullets[i].direction.y * 7.0f;
+            printf("Bullet %d: %f, %f\n", i, game->bullets[i].position.x, game->bullets[i].position.y);
+            game->bullets[i].position.x += game->bullets[i].velocity.x * 7.0f;
+            game->bullets[i].position.y += game->bullets[i].velocity.y * 7.0f;
 
             // Check if bullet is out of bounds
             if (game->bullets[i].position.x < 0 || 
@@ -214,26 +206,19 @@ void Game_Update(GameState* game) {
             if (game->vampires[i] != NULL) {  // Check again as vampire might have been destroyed
                 for (int j = 0; j < MAX_BULLETS; j++) {
                     if (game->bullets[j].active) {
-                        if (CheckCollisionCircles(
-                            game->bullets[j].position, game->bullets[j].radius,
-                            Vampire_GetPosition(game->vampires[i]), 
-                            Vampire_GetRadius(game->vampires[i]))) {
-                            
-                            Vampire_TakeDamage(game->vampires[i], game->bullets[j].damage);
-                            game->bullets[j].active = false;
+                        handleProjectileEnemyCollision(&game->bullets[j], game->vampires[i]);
 
-                            if (!Vampire_IsActive(game->vampires[i])) {
-                                Game_SpawnLoot(game, Vampire_GetPosition(game->vampires[i]));
-                                Vampire_Destroy(game->vampires[i]);
-                                game->vampires[i] = NULL;
-                                game->vampireCount--;
-                                break;
-                            }
+                        if (!Vampire_IsActive(game->vampires[i])) {
+                            Game_SpawnLoot(game, Vampire_GetPosition(game->vampires[i]));
+                            Vampire_Destroy(game->vampires[i]);
+                            game->vampires[i] = NULL;
+                            game->vampireCount--;
+                            break;
                         }
                     }
                 }
             }
-        }
+        }   
     }
 
     // Handle loot collection
@@ -255,7 +240,7 @@ void Game_Update(GameState* game) {
 
 void Game_Draw(GameState* game) {
     BeginDrawing();
-    ClearBackground(RAYWHITE);
+    ClearBackground(DARKGRAY);
 
     // Draw player
     Player_Draw(game->player);

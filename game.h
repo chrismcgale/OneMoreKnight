@@ -17,14 +17,6 @@
 #define SCREEN_HEIGHT 600
 #define LOOT_CHANCE 0.3f
 
-typedef struct Bullet {
-    Vector2 position;
-    Vector2 direction;
-    float radius;
-    bool active;
-    float damage;
-} Bullet;
-
 typedef enum {
     LOOT_LIFE,
     LOOT_WEAPON,
@@ -44,10 +36,11 @@ typedef struct Loot {
 typedef struct GameState {
     Player* player;
     Vampire* vampires[MAX_VAMPIRES];
-    Bullet bullets[MAX_BULLETS];
+    Projectile bullets[MAX_BULLETS];
     Loot loot[MAX_LOOT];
     int currentNight;
     int vampireCount;
+    int BulletCount;
     bool gameOver;
 } GameState;
 
@@ -57,7 +50,6 @@ void Game_Destroy(GameState* game);
 void Game_Update(GameState* game);
 void Game_Draw(GameState* game);
 void Game_SpawnVampire(GameState* game);
-void Game_ShootBullet(GameState* game);
 void Game_SpawnLoot(GameState* game, Vector2 position);
 void Game_HandleLootCollection(GameState* game);
 

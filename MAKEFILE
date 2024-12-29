@@ -14,7 +14,7 @@ else
 endif
 
 # Source files
-SOURCES = main.c game.c player.c vampire.c
+SOURCES = main.c game.c player.c vampire.c weapon.c
 HEADERS = game.h player.h vampire.h weapon.h talisman.h
 OBJECTS = $(SOURCES:.c=.o)
 
