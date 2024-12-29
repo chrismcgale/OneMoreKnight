@@ -7,11 +7,14 @@
 #include <raymath.h>
 #include <stdlib.h>
 
+struct Player;
+
 typedef enum {
     WEAPON_PISTOL,
     WEAPON_SHOTGUN,
     WEAPON_CROSSBOW,
-    WEAPON_MINIGUN
+    WEAPON_MINIGUN,
+    WEAPON_SWORD
 } WeaponType;
 
 typedef struct Weapon {
@@ -41,6 +44,6 @@ void Weapon_Destroy(Weapon* self);
 void shootShotgun(Vector2 playerPos, Vector2 direction, Projectile projectiles[], int* projectileCount, Weapon* currentWeapon);
 void shootCrossbow(Vector2 playerPos, Vector2 direction, Projectile projectiles[], int* projectileCount, Weapon* currentWeapon);
 void handleProjectileEnemyCollision(Projectile* projectile, Vampire* vamp);
-void handleWeaponInput(Vector2 playerPos, Vector2 mousePos, Projectile projectiles[], int* projectileCount, Weapon* currentWeapon);
+void handleWeaponInput(Vector2 playerPos, Vector2 mousePos, Projectile projectiles[], int* projectileCount, Weapon* currentWeapon, float* startAngle, float* currentAngle, bool* isSwinging);
 
 #endif

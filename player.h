@@ -3,8 +3,8 @@
 #define PLAYER_H
 
 #include "raylib.h"
-#include "weapon.h"
 #include "talisman.h"
+#include "weapon.h"
 
 typedef struct Player {
     Vector2 position;
@@ -14,6 +14,9 @@ typedef struct Player {
     TalismanType currentTalisman;
     float lastShootTime;
     float speed;
+    bool isSwinging;
+    float startAngle;
+    float currentAngle;
 } Player;
 
 // Constructor and destructor

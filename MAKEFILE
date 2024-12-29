@@ -1,5 +1,5 @@
 # Makefile
-CC = gcc
+CC = gcc -g
 CFLAGS = -Wall -Wextra -O2
 LIBS = -lraylib -lwinmm -lgdi32 -lopengl32 -lm
 DCMAKE_TOOLCHAIN_FILE=-I"C:/dev/vcpkg/installed/x64-windows/include" -L"C:/dev/vcpkg/installed/x64-windows/lib"

@@ -140,6 +140,50 @@ void Game_HandleLootCollection(GameState* game) {
     }
 }
 
+void updateSwordSwing(GameState* game, Player* p, Vector2 playerPos, Vector2 mousePos, Vampire** enemies, int vampCount) {
+    if (p->currentWeapon->type == WEAPON_SWORD && p->isSwinging) {
+        // Update swing animation
+        p->currentAngle += p->currentWeapon->projectileSpeed;
+        
+        // Check if swing animation is complete
+        if (p->currentAngle >= p->startAngle + PI) {
+            p->isSwinging = false;
+            return;
+        }
+        
+        // Check for enemies in the swing arc
+        for (int i = 0; i < vampCount; i++) {
+            if (!enemies[i]->active) continue;
+            
+            // Get vector to enemy
+            Vector2 toEnemy = Vector2Subtract(enemies[i]->position, playerPos);
+            float distanceToEnemy = Vector2Length(toEnemy);
+            
+            // Check if enemy is within sword reach
+            if (distanceToEnemy <=  p->currentWeapon->projectileRadius) {
+                // Get angle to enemy
+                float enemyAngle = atan2f(toEnemy.y, toEnemy.x);
+                //if (enemyAngle < 0) enemyAngle += 2*PI;  // Normalize angle
+                
+                // Check if enermy is within current swing arc
+                float swingStart = p->startAngle;
+                float swingEnd = p->currentAngle;
+                
+                if (swingStart <= enemyAngle && enemyAngle <= swingEnd) {
+                    // Hit enemy
+                    Vampire_TakeDamage(enemies[i], p->currentWeapon->damage);
+                }
+            }
+            if (!Vampire_IsActive(game->vampires[i])) {
+                Game_SpawnLoot(game, Vampire_GetPosition(game->vampires[i]));
+                Vampire_Destroy(game->vampires[i]);
+                game->vampires[i] = NULL;
+                game->vampireCount--;
+            }
+        }
+    }
+}
+
 void Game_Update(GameState* game) {
     if (game->gameOver) {
         if (IsKeyPressed(KEY_R)) {
@@ -153,17 +197,17 @@ void Game_Update(GameState* game) {
     // Update player
     Player_Update(game->player);
 
+    updateSwordSwing(game, game->player, Player_GetPosition(game->player), GetMousePosition(), game->vampires, game->vampireCount);
+
     // Handle shooting
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        handleWeaponInput(Player_GetPosition(game->player), GetMousePosition(), game->bullets, &game->BulletCount, game->player->currentWeapon);
-         printf("BulletCount %d \n", game->BulletCount);
+        handleWeaponInput(Player_GetPosition(game->player), GetMousePosition(), game->bullets, &game->BulletCount, game->player->currentWeapon, &game->player->startAngle, &game->player->currentAngle, &game->player->isSwinging);
         Player_UpdateShootCooldown(game->player);
     }
 
     // Update bullets
     for (int i = 0; i < MAX_BULLETS; i++) {
         if (game->bullets[i].active) {
-            printf("Bullet %d: %f, %f\n", i, game->bullets[i].position.x, game->bullets[i].position.y);
             game->bullets[i].position.x += game->bullets[i].velocity.x * 7.0f;
             game->bullets[i].position.y += game->bullets[i].velocity.y * 7.0f;
 
@@ -176,6 +220,8 @@ void Game_Update(GameState* game) {
             }
         }
     }
+
+
 
     // Update vampires and check collisions
     Vector2 playerPos = Player_GetPosition(game->player);
@@ -238,12 +284,36 @@ void Game_Update(GameState* game) {
     }
 }
 
+void DrawSwordSwing(Player* p, Vector2 playerPos) {
+    if (p->isSwinging) {
+        // Draw sword blade
+        Vector2 swordTip = {
+            playerPos.x + p->currentWeapon->projectileRadius * cosf(p->currentAngle),
+            playerPos.y + p->currentWeapon->projectileRadius * sinf(p->currentAngle)
+        };
+        DrawLineEx(playerPos, swordTip, 3.0f, WHITE);
+        
+        // Draw swing arc visualization (optional, for debugging)
+        DrawCircleSector(
+            playerPos,
+            p->currentWeapon->projectileRadius,
+            RAD2DEG * p->startAngle,
+            RAD2DEG * p->currentAngle,
+            32,
+            Fade(WHITE, 0.2f)
+        );
+    }
+}
+
 void Game_Draw(GameState* game) {
     BeginDrawing();
     ClearBackground(DARKGRAY);
 
     // Draw player
     Player_Draw(game->player);
+
+    // Draw sword swing
+    DrawSwordSwing(game->player, Player_GetPosition(game->player));
 
     // Draw vampires
     for (int i = 0; i < MAX_VAMPIRES; i++) {
@@ -285,7 +355,7 @@ void Game_Draw(GameState* game) {
     // Draw UI
     DrawText(
         TextFormat("Night: %d", game->currentNight),
-        10, 40, 20, BLACK
+        SCREEN_WIDTH - 100, 20, 20, BLACK
     );
 
     // Draw game over screen

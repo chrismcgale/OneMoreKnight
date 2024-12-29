@@ -14,10 +14,11 @@ Player* Player_Create(Vector2 position) {
     self->position = position;
     self->radius = 20.0f;
     self->lives = 3;
-    self->currentWeapon = Weapon_Create(WEAPON_SHOTGUN);
+    self->currentWeapon = Weapon_Create(WEAPON_SWORD);
     self->currentTalisman = TALISMAN_NONE;
     self->lastShootTime = 0;
     self->speed = 5.0f;
+    self->isSwinging = false;
     return self;
 }
 
@@ -48,18 +49,24 @@ void Player_Update(Player* self) {
         self->position.y = Clamp(self->position.y, self->radius, 
             GetScreenHeight() - self->radius);
     }
+
+    if (self->currentWeapon->bulletsLeft == 0) {
+        Player_AddWeapon(self, Weapon_Create(WEAPON_SWORD));
+    }
 }
+
 
 void drawWeaponIndicator(Weapon* currentWeapon) {
     // Assuming health bar is at top of screen, position this below it
-    Rectangle iconBackground = {10, 50, 100, 40};  // x, y, width, height
+    Rectangle iconBackground = {10, 50, 150, 40};  // x, y, width, height
     DrawRectangleRec(iconBackground, DARKGRAY);
     DrawRectangleLinesEx(iconBackground, 2, WHITE);  // Border
 
-    // Draw ammo counter text
-    char ammoText[32];
-    sprintf(ammoText, "%d/%d", currentWeapon->bulletsLeft, currentWeapon->maxProjectiles);
-    DrawText(ammoText, 110, 65, 15, WHITE);
+    if (currentWeapon->type != WEAPON_SWORD) {
+        // Draw ammo counter text
+        char ammoText[32];
+        DrawText(ammoText, 70, 70, 15, WHITE);
+    }
 
     // Draw weapon icon based on current weapon
     switch(currentWeapon->type) {
@@ -100,7 +107,32 @@ void drawWeaponIndicator(Weapon* currentWeapon) {
             DrawRectangle(50, 70, 10, 15, WHITE);    // Handle
             DrawText("MINIGUN", 70, 60, 10, WHITE);
             break;
+        case WEAPON_SWORD:
+            // Draw sword icon
+            DrawRectangle(35, 57, 6, 15, LIGHTGRAY);    // Handle
+            DrawRectangle(33, 72, 10, 4, GRAY);         // Guard/Cross-guard
+            DrawRectangle(37, 58, 2, 14, GRAY);         // Handle detail
+            DrawTriangle(                               // Blade
+                (Vector2){38, 57},
+                (Vector2){28, 77},
+                (Vector2){48, 77},
+                WHITE
+            );
+            DrawText("SWORD", 70, 60, 10, WHITE);
+            break;
     }
+}
+
+void DrawHeart(int x, int y, int size, Color color) {
+    // Draw two circles for the top of the heart
+    DrawCircle(x - size/4, y, size/2, color);
+    DrawCircle(x + size/4, y, size/2, color);
+    
+    // Draw triangle for bottom of heart
+    Vector2 v1 = { x - size/2, y + size/4 };
+    Vector2 v2 = { x + size/2, y + size/4 };
+    Vector2 v3 = { x, y + size };
+    DrawTriangle(v1, v2, v3, color);
 }
 
 void Player_Draw(Player* self) {
@@ -114,7 +146,8 @@ void Player_Draw(Player* self) {
     
     // Draw lives
     for (int i = 0; i < self->lives; i++) {
-        DrawCircle(30 + i * 30, 30, 10, RED);
+        DrawHeart(30 + (50 * i), 30, 30, RED);
+        //DrawCircle(30 + i * 30, 30, 10, RED);
     }
 
     drawWeaponIndicator(self->currentWeapon);
